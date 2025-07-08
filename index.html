@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Tour Expense Tracker</title>
+  <style>
+    body {
+      font-family: Arial;
+      margin: 30px;
+    }
+    input, select {
+      padding: 6px;
+      margin: 5px;
+    }
+    table {
+      border-collapse: collapse;
+      margin-top: 20px;
+      width: 100%;
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #aaa;
+    }
+    th {
+      background-color: #f2f2f2;
+    }
+    .success {
+      color: green;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+
+  <h2>Tour Expense Tracker</h2>
+
+  <form id="expenseForm">
+    <label>Payer:</label>
+    <select id="payer_id"></select>
+    <label>Amount:</label>
+    <input type="number" id="amount" required>
+    <label>Description:</label>
+    <input type="text" id="description">
+    <button type="submit">Add Expense</button>
+  </form>
+
+  <p class="success" id="msg"></p>
+
+  <h3>Current Balances</h3>
+  <table id="balanceTable">
+    <thead>
+      <tr>
+        <th>Person ID</th>
+        <th>Name</th>
+        <th>Paid</th>
+        <th>Share Owed</th>
+        <th>Net Balance</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const backendURL = " https://cba770fb0584.ngrok-free.app";
+
+    async function loadMembers() {
+  const res = await fetch(`${backendURL}/get_members`);
+  const members = await res.json();
+  const payerSelect = document.getElementById("payer_id");
+
+  members.forEach(member => {
+    const opt = document.createElement("option");
+    opt.value = member.id;
+    opt.textContent = `${member.id} - ${member.name}`;
+    payerSelect.appendChild(opt);
+  });
+}
+
+    // Populate dropdown
+    const payerSelect = document.getElementById("payer_id");
+    Object.entries(memberList).forEach(([id, name]) => {
+      const opt = document.createElement("option");
+      opt.value = id;
+      opt.textContent = `${id} - ${name}`;
+      payerSelect.appendChild(opt);
+    });
+
+    // Handle form submission
+    document.getElementById("expenseForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const data = {
+        payer_id: document.getElementById("payer_id").value,
+        amount: parseFloat(document.getElementById("amount").value),
+        description: document.getElementById("description").value
+      };
+
+      const res = await fetch(`${backendURL}/add_expense`, {
+        method: "POST",
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(data)
+      });
+      const result = await res.json();
+      document.getElementById("msg").textContent = result.message;
+      loadBalances();
+      e.target.reset();
+    });
+
+    async function loadBalances() {
+      const res = await fetch(`${backendURL}/get_balances`);
+      const data = await res.json();
+      const tbody = document.querySelector("#balanceTable tbody");
+      tbody.innerHTML = "";
+      data.forEach(row => {
+        const tr = document.createElement("tr");
+        tr.innerHTML = `<td>${row["Person ID"]}</td><td>${row["Name"]}</td><td>${row["Paid"]}</td><td>${row["Share Owed"]}</td><td>${row["Net Balance"]}</td>`;
+        tbody.appendChild(tr);
+      });
+    }
+
+    loadMembers();
+	loadBalances();
+  </script>
+
+</body>
+</html>
